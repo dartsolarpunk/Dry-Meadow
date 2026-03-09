@@ -1,6 +1,6 @@
 # Dry Meadow 
 
-<img width="2660" height="1140" alt="1000036741" src="https://github.com/user-attachments/assets/c215e4ac-3cb4-4bdd-98f3-40f36ce46f9b" />
+<img width="512" height="512" alt="1000053165" src="https://github.com/user-attachments/assets/112529d2-a49a-418a-b628-52390080fbd7" />
 
 https://drymeadow.com/
 
