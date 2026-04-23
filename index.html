@@ -523,6 +523,40 @@
     <header class="header">
         <a href="https://youtube.com/@dry.meadow" class="logo">Dry Meadow</a>
         <div class="nav-controls">
+            <!-- GitHub user pill (visible when authenticated) -->
+            <div id="dm-user-pill" style="display:none;align-items:center;gap:6px;
+                 padding:3px 9px 3px 3px;background:rgba(255,255,255,.05);
+                 border:1px solid rgba(255,255,255,.15);border-radius:20px;
+                 cursor:pointer;margin-right:6px" onclick="dmToggleUserMenu()">
+              <img id="dm-avatar" src="" alt="" width="22" height="22"
+                   style="border-radius:50%;object-fit:cover">
+              <span id="dm-username" style="font-size:.68rem;color:rgba(255,255,255,.7);
+                    letter-spacing:.04em"></span>
+            </div>
+            <!-- User mini-menu -->
+            <div id="dm-user-menu" style="display:none;position:absolute;top:60px;right:12px;
+                 z-index:9800;background:#111;border:1px solid rgba(255,255,255,.12);
+                 border-radius:10px;padding:14px;min-width:190px;
+                 box-shadow:0 8px 32px rgba(0,0,0,.7);font-family:inherit">
+              <div style="margin-bottom:10px;padding-bottom:10px;
+                          border-bottom:1px solid rgba(255,255,255,.08)">
+                <div style="font-size:.72rem;color:#fff;font-weight:600" id="dm-menu-name"></div>
+                <div style="font-size:.65rem;color:rgba(255,255,255,.4);margin-top:2px" id="dm-menu-email"></div>
+              </div>
+              <!-- Cross-domain status -->
+              <div style="margin-bottom:10px;padding-bottom:10px;
+                          border-bottom:1px solid rgba(255,255,255,.08)">
+                <div style="font-size:.58rem;color:rgba(255,255,255,.25);letter-spacing:.1em;
+                            text-transform:uppercase;margin-bottom:6px">Connected Sites</div>
+                <div id="dm-domain-list" style="display:flex;flex-direction:column;gap:4px"></div>
+              </div>
+              <button onclick="DART_AUTH.logout()"
+                style="width:100%;padding:7px;background:transparent;
+                       border:1px solid rgba(255,80,80,.2);color:rgba(255,120,120,.5);
+                       border-radius:6px;cursor:pointer;font-size:.65rem">
+                Disconnect GitHub
+              </button>
+            </div>
             <button id="share-btn" class="share-btn" aria-label="Share Page">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 8.81C7.5 8.31 6.79 8 6 8c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.23-.09.46-.09.7 0 1.66 1.34 3 3 3s3-1.34 3-3-1.34-3-3-3z"/>
@@ -648,11 +682,23 @@
         </div>
     </footer>
 
-    <div id="cookie-banner" class="cookie-banner">
-        <p class="cookie-text">This site uses cookies to provide services at the highest level. By continuing to use the site, you agree to their use.</p>
-        <div class="cookie-buttons">
-            <button id="cookie-more" class="cookie-btn">More</button>
-            <button id="cookie-accept" class="cookie-btn accept">Accept</button>
+    <div id="cookie-banner" class="cookie-banner" style="flex-direction:column;gap:10px;padding:16px 20px;max-width:400px;border-radius:12px">
+        <p class="cookie-text">This site uses cookies. Connect with GitHub to sync your profile across all Dry Meadow · Radical Deepscale apps, or accept cookies only.</p>
+        <div style="display:flex;flex-direction:column;gap:8px;width:100%">
+          <button id="cookie-gh-btn" onclick="dmGHLogin()"
+            style="display:flex;align-items:center;justify-content:center;gap:8px;
+                   width:100%;padding:10px 16px;border-radius:7px;cursor:pointer;
+                   background:rgba(22,27,34,.9);border:1px solid rgba(255,255,255,.25);
+                   color:#c9d1d9;font-size:.75rem;letter-spacing:.06em;transition:all .2s">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="#c9d1d9">
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+            </svg>
+            Sign in with GitHub
+          </button>
+          <div style="display:flex;gap:8px">
+            <button id="cookie-more"   class="cookie-btn" style="flex:1">Privacy Policy</button>
+            <button id="cookie-accept" class="cookie-btn accept" style="flex:1">Accept Only</button>
+          </div>
         </div>
     </div>
 
@@ -754,6 +800,108 @@
             });
         });
     </script>
+
+
+<!-- ================================================================
+     DART ZERO-AUTH  ·  Dry Meadow / dartmeadow.com integration
+     ================================================================ -->
+<script src="https://raw.githubusercontent.com/DART-Skyboard/Ariel/main/static/auth.js"></script>
+<script>
+function dmGHLogin() {
+  const btn = document.getElementById('cookie-gh-btn');
+  if (btn) { btn.textContent = 'Connecting…'; btn.disabled = true; }
+  DART_AUTH.beginOAuth();
+}
+
+function dmToggleUserMenu() {
+  const m = document.getElementById('dm-user-menu');
+  if (!m) return;
+  const open = m.style.display === 'flex';
+  m.style.display = open ? 'none' : 'flex';
+  m.style.flexDirection = 'column';
+  if (!open) _dmLoadDomainPanel();
+}
+
+document.addEventListener('click', e => {
+  const pill = document.getElementById('dm-user-pill');
+  const menu = document.getElementById('dm-user-menu');
+  if (menu && pill && !pill.contains(e.target) && !menu.contains(e.target))
+    menu.style.display = 'none';
+});
+
+function _dmSetLoggedIn(user) {
+  /* Hide cookie banner */
+  const banner = document.getElementById('cookie-banner');
+  if (banner) banner.style.display = 'none';
+  try { localStorage.setItem('cookieAccepted_v1', 'true'); } catch(e) {}
+
+  /* Show user pill */
+  const pill = document.getElementById('dm-user-pill');
+  const av   = document.getElementById('dm-avatar');
+  const un   = document.getElementById('dm-username');
+  if (pill) pill.style.display = 'flex';
+  if (av)   av.src  = DART_AUTH.getAvatar();
+  if (un)   un.textContent = '@' + user.login;
+
+  const mn = document.getElementById('dm-menu-name');
+  const em = document.getElementById('dm-menu-email');
+  if (mn) mn.textContent = user.name || user.login;
+  if (em && user._primaryEmail) em.textContent = user._primaryEmail;
+}
+
+function _dmSetLoggedOut() {
+  const pill = document.getElementById('dm-user-pill');
+  if (pill) pill.style.display = 'none';
+  const menu = document.getElementById('dm-user-menu');
+  if (menu) menu.style.display = 'none';
+}
+
+async function _dmLoadDomainPanel() {
+  const list = document.getElementById('dm-domain-list');
+  if (!list) return;
+  const status = await DART_AUTH.getCrossDomainStatus().catch(() => null);
+  if (!status) return;
+  list.innerHTML = '';
+  const LABELS = {
+    'radicaldeepscale.com': { label:'Radical Deepscale', key:'rds',    url:'https://radicaldeepscale.com' },
+    'dartmeadow.com':       { label:'Dry Meadow',        key:'dm',     url: null                           },
+    'autumn':               { label:'Autumn AI',         key:'autumn', url:'https://radicaldeepscale.com/autumn.html' },
+  };
+  Object.entries(LABELS).forEach(([domain, { label, key, url }]) => {
+    const rec    = status[domain];
+    const isConn = rec?.connected === true;
+    const isHere = domain === 'dartmeadow.com';
+    const col    = isConn ? '#aaffdd' : 'rgba(255,255,255,.2)';
+    const row    = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:6px';
+    row.innerHTML = `
+      <span style="font-size:.65rem;color:rgba(255,255,255,.75);display:flex;align-items:center;gap:5px">
+        <span style="width:6px;height:6px;border-radius:50%;background:${col};flex-shrink:0"></span>
+        ${isHere ? '<strong>' + label + '</strong>' : label}
+      </span>
+      ${!isConn && url ? `<a href="${url}" style="font-size:.58rem;color:rgba(255,255,255,.3);
+        text-decoration:none;border:1px solid rgba(255,255,255,.1);padding:1px 5px;border-radius:3px">
+        Connect</a>` : ''}
+      ${isConn && !isHere ? `<button onclick="DART_AUTH.disconnectDomain('${key}')"
+        style="font-size:.55rem;padding:1px 5px;border-radius:3px;cursor:pointer;
+               background:transparent;border:1px solid rgba(255,80,80,.2);
+               color:rgba(255,100,100,.4)">Out</button>` : ''}
+    `;
+    list.appendChild(row);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  DART_AUTH.init({
+    onLogin : user => _dmSetLoggedIn(user),
+    onLogout: ()   => _dmSetLoggedOut(),
+    onError : e    => {
+      const btn = document.getElementById('cookie-gh-btn');
+      if (btn) { btn.innerHTML = 'Sign in with GitHub'; btn.disabled = false; }
+    },
+  });
+});
+</script>
 
 </body>
 </html>
