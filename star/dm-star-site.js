@@ -33,6 +33,7 @@ export const DEFAULTS = {
   viewRadius: 2.45,  // how many radii fit to the half-size of the host box (2.45 shows the full corona)
   quality: 'auto',   // 'auto' | 'low' | 'high' (game's lowTier switch)
   dprCap: 2,
+  orbit: true,       // drag to orbit; false disables. Or {autoRotate:0.08 rad/s, minZoom:0.8, maxZoom:2, el:<element to listen on>}
   fallbackSrc: new URL('./star-fallback.png', import.meta.url).href,
   forceWebGL: /[?&]gl=1\b/.test(location.search)
 };
@@ -130,22 +131,76 @@ export async function mountStar(host, userCfg) {
       renderer.setPixelRatio(dpr); renderer.setSize(W, H, false);
       const d = cfg.distance * cfg.radius, half = cfg.viewRadius * cfg.radius * (H / Math.min(W, H));
       camera.fov = 2 * Math.atan(half / d) * 180 / Math.PI; camera.aspect = W / H;
-      camera.position.set(0, 0, d); camera.lookAt(0, 0, 0); camera.updateProjectionMatrix();
+      O.base = d; place(); camera.updateProjectionMatrix();
     };
-    size(); new ResizeObserver(size).observe(host);
+    /* tiny orbit: spherical camera around the star. Listens on the hero (never the canvas, which stays pointer-events:none). */
+    const oc = Object.assign({ autoRotate: 0.08, minZoom: 0.8, maxZoom: 2, el: host.closest('header,section') || host }, cfg.orbit === true ? {} : cfg.orbit || {});
+    const O = { az: 0, pol: Math.PI / 2, vaz: 0, vpol: 0, zoom: 1, base: 1, down: false, idle: 0 };
+    const place = () => {
+      const d = O.base * O.zoom, sp = Math.sin(O.pol);
+      camera.position.set(d * sp * Math.sin(O.az), d * Math.cos(O.pol), d * sp * Math.cos(O.az)); camera.lookAt(0, 0, 0);
+    };
+    let wake = () => {};
+    if (cfg.orbit) {
+      const el = oc.el, ptr = new Map(); let mode = '', sx = 0, sy = 0, pinch = 0;
+      const skip = t => t.closest && t.closest('a,button,input,select,textarea,label,.side-menu,[role=button]');
+      el.style.touchAction = 'pan-y';                 // vertical swipes scroll the page; horizontal ones reach us
+      const clampPol = () => { O.pol = Math.max(0.35, Math.min(Math.PI - 0.35, O.pol)); };
+      el.addEventListener('pointerdown', e => {
+        if (e.button > 0 || skip(e.target)) return;
+        ptr.set(e.pointerId, e); O.down = true; O.vaz = O.vpol = 0; sx = e.clientX; sy = e.clientY;
+        mode = e.pointerType === 'mouse' ? 'orbit' : (ptr.size > 1 ? 'pinch' : '');
+        if (ptr.size === 2) { const [a, b] = [...ptr.values()]; pinch = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); mode = 'pinch'; }
+        if (e.pointerType === 'mouse') { try { el.setPointerCapture(e.pointerId); } catch (_) {} }
+        wake();
+      });
+      el.addEventListener('pointermove', e => {
+        const p = ptr.get(e.pointerId); if (!p) return;
+        const dx = e.clientX - p.clientX, dy = e.clientY - p.clientY; ptr.set(e.pointerId, e);
+        if (mode === '') {                            // touch: first movement decides scroll vs orbit
+          if (Math.hypot(e.clientX - sx, e.clientY - sy) < 8) return;
+          if (Math.abs(e.clientY - sy) > Math.abs(e.clientX - sx)) { mode = 'scroll'; return; }
+          mode = 'orbit';
+        }
+        if (mode === 'orbit' && ptr.size === 1) {
+          const k = 2.6 / Math.max(240, Math.min(host.clientWidth, host.clientHeight));
+          O.az -= dx * k; O.pol -= dy * k; O.vaz = -dx * k * 60; O.vpol = -dy * k * 60; clampPol(); wake();
+        } else if (mode === 'pinch' && ptr.size === 2) {
+          const [a, b] = [...ptr.values()], dd = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+          if (pinch > 0) O.zoom = Math.max(oc.minZoom, Math.min(oc.maxZoom, O.zoom * pinch / dd)); pinch = dd; wake();
+        }
+      });
+      const up = e => { ptr.delete(e.pointerId); if (!ptr.size) { O.down = false; O.idle = 0; mode = ''; } else if (ptr.size === 1) mode = 'orbit'; wake(); };
+      el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('lostpointercapture', up);
+      el.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault();   // plain wheel scrolls the page; ctrl/trackpad-pinch zooms
+        O.zoom = Math.max(oc.minZoom, Math.min(oc.maxZoom, O.zoom * Math.exp(e.deltaY * 0.01))); place(); wake(); }, { passive: false });
+    }
+    const orbitStep = dt => {
+      if (!cfg.orbit) return false;
+      if (!O.down) {
+        O.idle += dt; O.az += O.vaz * dt; O.pol += O.vpol * dt; const f = Math.exp(-dt * 4); O.vaz *= f; O.vpol *= f;
+        if (Math.abs(O.vaz) < 1e-3) O.vaz = 0; if (Math.abs(O.vpol) < 1e-3) O.vpol = 0;
+        if (!reduce.matches && O.idle > 2.5 && oc.autoRotate) O.az += oc.autoRotate * dt * Math.min(1, (O.idle - 2.5));
+        O.pol = Math.max(0.35, Math.min(Math.PI - 0.35, O.pol));
+      }
+      place(); return O.down || O.vaz !== 0 || O.vpol !== 0;
+    };
+    size(); new ResizeObserver(() => { size(); if (!running) still(); }).observe(host);
 
     let raf = 0, last = 0, visible = true, running = false;
     const frame = (now) => {
       raf = 0; if (!running) return;
       const dt = Math.min(0.1, last ? (now - last) / 1000 : 1 / 60); last = now;
-      DMStar.frame(camera, dt); renderer.render(scene, camera);
+      orbitStep(dt); DMStar.frame(camera, dt); renderer.render(scene, camera);
+      if (reduce.matches && !O.down && !O.vaz && !O.vpol) { running = false; raf = 0; return; }
       raf = requestAnimationFrame(frame);
     };
     const update = () => {
-      const want = visible && !document.hidden && !reduce.matches && !ctl.paused;
+      const want = visible && !document.hidden && !ctl.paused && (!reduce.matches || O.down || O.vaz || O.vpol);
       if (want && !running) { running = true; last = 0; raf = requestAnimationFrame(frame); }
       else if (!want && running) { running = false; if (raf) cancelAnimationFrame(raf); raf = 0; }
     };
+    wake = update; ctl.orbit = O;
     // a still frame (reduced motion / before first view): warm the loops a few ticks so plumes exist, then draw
     const still = () => { for (let i = 0; i < 30; i++) DMStar.frame(camera, 0.1); renderer.render(scene, camera); };
     ctl.renderOnce = still;
