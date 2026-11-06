@@ -58,6 +58,8 @@ button { font-family:inherit; }
 #menu-scrim.open { opacity:1; visibility:visible; }
 .side-menu { position:fixed; top:0; right:0; width:min(320px,86vw); height:100%; overflow-y:auto; background:rgba(10,10,10,0.96); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-left:1px solid var(--border); transform:translateX(105%); visibility:hidden; transition:transform .35s ease, visibility .35s; z-index:20; padding:76px 28px 40px; }
 .side-menu.open { transform:none; visibility:visible; }
+.reset-view { display:block; width:100%; min-height:44px; margin:0 0 8px; background:transparent; color:inherit; border:1px solid var(--border); border-radius:999px; font:inherit; font-size:.8rem; letter-spacing:2px; text-transform:uppercase; cursor:pointer; }
+.reset-view:hover { color:var(--accent); border-color:var(--accent); }
 .side-menu a { display:flex; align-items:center; min-height:44px; font-size:1.2rem; margin:4px 0; text-transform:uppercase; letter-spacing:1px; }
 .side-menu a:hover { color:var(--accent); }
 .side-menu .grp { margin:22px 0 4px; font-size:.7rem; letter-spacing:3px; color:#888; text-transform:uppercase; }
@@ -130,6 +132,7 @@ section { scroll-margin-top:0; }
 </header>
 
 <nav class="side-menu" id="sideMenu" aria-label="Main menu" aria-hidden="true">
+  <button id="reset-view" type="button" class="reset-view">Reset 3D view</button>
   <button id="menu-close" class="icon-btn" type="button" aria-label="Close menu">&#10005;</button>
   <a href="#projects">Projects</a>
   <a href="#shop">Shop</a>
@@ -204,11 +207,11 @@ section { scroll-margin-top:0; }
 <script src="site.js"></script>
 <script type="module">
 /* Hero star: the game's own star (Journey of the Skyboard ui/dm-star.js), vendored in /star. Config in one object. */
-import { mountStar } from './star/dm-star-site.js?v=orbit3';
+import { mountStar } from './star/dm-star-site.js?v=orbit4';
 mountStar(document.getElementById('canvas-container'), {
   preset: 'sol',   // 'sol' = pale golden star (5778 K, seed 1). Or set { type:'K orange', seed:7 } / { temp:6200, seed:3 }
   // distance: 3.2, quality: 'auto', dprCap: 2
-}).finally(() => document.getElementById('loader')?.remove());
+}).then(c => { const b = document.getElementById('reset-view'); if (b && c && c.resetView) b.addEventListener('click', () => c.resetView()); }).finally(() => document.getElementById('loader')?.remove());
 </script>
 </body>
 </html>

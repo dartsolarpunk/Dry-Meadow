@@ -135,11 +135,18 @@ export async function mountStar(host, userCfg) {
     };
     /* tiny orbit: spherical camera around the star. Listens on the hero (never the canvas, which stays pointer-events:none). */
     const oc = Object.assign({ autoRotate: 0.08, minZoom: 0.8, maxZoom: 2, el: host.closest('header,section') || host }, cfg.orbit === true ? {} : cfg.orbit || {});
-    const O = { az: 0, pol: Math.PI / 2, vaz: 0, vpol: 0, zoom: 1, base: 1, down: false, idle: 0 };
+    const O = { az: 0, pol: Math.PI / 2, vaz: 0, vpol: 0, zoom: 1, base: 1, down: false, idle: 0, tx: 0, ty: 0, tz: 0 };
     const place = () => {
       const d = O.base * O.zoom, sp = Math.sin(O.pol);
-      camera.position.set(d * sp * Math.sin(O.az), d * Math.cos(O.pol), d * sp * Math.cos(O.az)); camera.lookAt(0, 0, 0);
+      camera.position.set(O.tx + d * sp * Math.sin(O.az), O.ty + d * Math.cos(O.pol), O.tz + d * sp * Math.cos(O.az)); camera.lookAt(O.tx, O.ty, O.tz);
     };
+    const panBy = (dx, dy) => {                     // screen-space pan: move the look-at target along the camera's right/up
+      const k = 2 * O.base * O.zoom * Math.tan((camera.fov || 40) * Math.PI / 360) / Math.max(200, host.clientHeight);
+      const r = new camera.position.constructor().setFromMatrixColumn(camera.matrixWorld, 0), u = new camera.position.constructor().setFromMatrixColumn(camera.matrixWorld, 1);
+      O.tx -= r.x * dx * k - u.x * dy * k; O.ty -= r.y * dx * k - u.y * dy * k; O.tz -= r.z * dx * k - u.z * dy * k;
+      const m = Math.hypot(O.tx, O.ty, O.tz), lim = O.base * 1.2; if (m > lim) { O.tx *= lim / m; O.ty *= lim / m; O.tz *= lim / m; }
+    };
+    ctl.resetView = () => { O.az = 0; O.pol = Math.PI / 2; O.zoom = 1; O.vaz = O.vpol = 0; O.tx = O.ty = O.tz = 0; O.idle = 0; place(); camera.updateMatrixWorld && camera.updateMatrixWorld(true); wake(); if (!running) still(); };
     let wake = () => {};
     if (cfg.orbit) {
       const el = oc.el, ptr = new Map(); let mode = '', sx = 0, sy = 0, pinch = 0;
@@ -147,9 +154,9 @@ export async function mountStar(host, userCfg) {
       el.style.touchAction = 'pan-y';                 // vertical swipes scroll the page; horizontal ones reach us
       const clampPol = () => { O.pol = Math.max(0.35, Math.min(Math.PI - 0.35, O.pol)); };
       el.addEventListener('pointerdown', e => {
-        if (e.button > 0 || skip(e.target)) return;
+        if ((e.button > 0 && e.button !== 2) || skip(e.target)) return;
         ptr.set(e.pointerId, e); O.down = true; O.vaz = O.vpol = 0; sx = e.clientX; sy = e.clientY;
-        mode = (e.pointerType === 'mouse' || (e.target.closest && e.target.closest('#star-grab'))) ? 'orbit' : (ptr.size > 1 ? 'pinch' : '');
+        mode = e.button === 2 || (e.pointerType === 'mouse' && e.shiftKey) ? 'pan' : (e.pointerType === 'mouse' || (e.target.closest && e.target.closest('#star-grab'))) ? 'orbit' : (ptr.size > 1 ? 'pinch' : '');
         if (ptr.size === 2) { const [a, b] = [...ptr.values()]; pinch = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); mode = 'pinch'; }
         if (e.pointerType === 'mouse') { try { el.setPointerCapture(e.pointerId); } catch (_) {} }
         wake();
@@ -162,15 +169,18 @@ export async function mountStar(host, userCfg) {
           if (Math.abs(e.clientY - sy) > Math.abs(e.clientX - sx)) { mode = 'scroll'; return; }
           mode = 'orbit';
         }
-        if (mode === 'orbit' && ptr.size === 1) {
+        if (mode === 'pan' && ptr.size === 1) { panBy(dx, dy); wake(); }
+        else if (mode === 'orbit' && ptr.size === 1) {
           const k = 2.6 / Math.max(240, Math.min(host.clientWidth, host.clientHeight));
           O.az -= dx * k; O.pol -= dy * k; O.vaz = -dx * k * 60; O.vpol = -dy * k * 60; clampPol(); wake();
         } else if (mode === 'pinch' && ptr.size === 2) {
           const [a, b] = [...ptr.values()], dd = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
-          if (pinch > 0) O.zoom = Math.max(oc.minZoom, Math.min(oc.maxZoom, O.zoom * pinch / dd)); pinch = dd; wake();
+          if (pinch > 0) O.zoom = Math.max(oc.minZoom, Math.min(oc.maxZoom, O.zoom * pinch / dd)); pinch = dd;
+          panBy(dx / 2, dy / 2); wake();
         }
       });
       const up = e => { ptr.delete(e.pointerId); if (!ptr.size) { O.down = false; O.idle = 0; mode = ''; } else if (ptr.size === 1) mode = 'orbit'; wake(); };
+      el.addEventListener('contextmenu', e => { if (e.target.closest && e.target.closest('#star-grab')) e.preventDefault(); });
       el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('lostpointercapture', up);
       el.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault();   // plain wheel scrolls the page; ctrl/trackpad-pinch zooms
         O.zoom = Math.max(oc.minZoom, Math.min(oc.maxZoom, O.zoom * Math.exp(e.deltaY * 0.01))); place(); wake(); }, { passive: false });
