@@ -202,104 +202,13 @@ section { scroll-margin-top:0; }
 <div id="share-toast" class="share-toast" role="status">Link Copied!</div>
 
 <script src="site.js"></script>
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.185.0/build/three.webgpu.js",
-    "three/webgpu": "https://cdn.jsdelivr.net/npm/three@0.185.0/build/three.webgpu.js",
-    "three/tsl": "https://cdn.jsdelivr.net/npm/three@0.185.0/build/three.tsl.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.185.0/examples/jsm/"
-  }
-}
-</script>
 <script type="module">
-import * as THREE_NS from 'three/webgpu';
-import * as TSL from 'three/tsl';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-
-window.THREE = Object.assign({}, THREE_NS);
-Object.assign(window, TSL);
-const THREE = window.THREE;
-
-const container = document.getElementById('canvas-container');
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-camera.position.set(0, 0, 4.2);
-
-const renderer = new THREE.WebGPURenderer({ antialias: true, alpha: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-container.appendChild(renderer.domElement);
-await renderer.init();
-
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.autoRotate = true;
-controls.autoRotateSpeed = 0.2;
-
-// Faithful plasma port from dm-star.js structure (flow-warped ridged noise)
-const { uniform, vec3, sin, mix, smoothstep, time, float, normalize, positionLocal, normalWorld, cameraPosition, abs, pow, oneMinus, exp, mx_fractal_noise_float } = TSL;
-
-const U = {
-  deep: uniform(new THREE.Color(0.42, 0.24, 0.05)),
-  mid: uniform(new THREE.Color(0.82, 0.55, 0.2)),
-  hot: uniform(new THREE.Color(1.0, 0.75, 0.3)),
-  core: uniform(new THREE.Color(1.0, 0.9, 0.6)),
-  seed: uniform(new THREE.Vector3(1.9, 2.4, 3.1)),
-  speed: uniform(0.9)
-};
-
-function plasma(d) {
-  const t = time.mul(U.speed);
-  const p0 = d.mul(36).add(U.seed);
-  const fl = p0.add(sin(p0.yzx.mul(0.85).add(t.mul(0.15))).mul(0.7));
-  const fl2 = fl.add(sin(fl.zxy.mul(1.4).sub(t.mul(0.08))).mul(0.35));
-  // ridged multi-octave like the game
-  const nz = x => sin(x.x.mul(2.7).add(x.y.mul(1.9))).mul(sin(x.y.mul(3.1).sub(x.z.mul(2.2))));
-  let g = oneMinus(abs(nz(fl2))).pow(4.5);
-  g = g.add(oneMinus(abs(nz(fl2.mul(2.1).add(t.mul(0.2))))).pow(3.2).mul(0.5));
-  g = g.add(oneMinus(abs(nz(fl2.mul(3.8).sub(t.mul(0.1))))).pow(2.4).mul(0.22));
-  g = g.mul(0.4).add(0.15);
-  g = g.clamp(0, 1);
-  let col = mix(U.deep, U.mid, smoothstep(0.2, 0.45, g));
-  col = mix(col, U.hot, smoothstep(0.45, 0.7, g));
-  col = mix(col, U.core, smoothstep(0.75, 0.95, g));
-  return col;
-}
-
-const sunMat = new THREE.MeshBasicNodeMaterial();
-const d = normalize(positionLocal);
-const V = normalize(cameraPosition.sub(positionLocal));
-const ndv = normalWorld.dot(V).clamp(0, 1);
-const limb = ndv.pow(0.25).mul(0.2).add(0.8);
-sunMat.colorNode = plasma(d).mul(limb);
-sunMat.toneMapped = false;
-
-const sun = new THREE.Mesh(new THREE.SphereGeometry(1.2, 256, 256), sunMat);
-scene.add(sun);
-
-const coronaMat = new THREE.MeshBasicNodeMaterial({ transparent: true, side: THREE.BackSide, blending: THREE.AdditiveBlending, depthWrite: false });
-coronaMat.colorNode = mix(U.hot, U.core, 0.4).mul(0.25);
-coronaMat.opacityNode = float(0.25);
-const corona = new THREE.Mesh(new THREE.SphereGeometry(1.45, 64, 64), coronaMat);
-scene.add(corona);
-
-function resize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-}
-window.addEventListener('resize', resize);
-resize();
-
-function animate() {
-  requestAnimationFrame(animate);
-  controls.update();
-  renderer.render(scene, camera);
-}
-animate();
-
-document.getElementById('loader')?.remove();
+/* Hero star: the game's own star (Journey of the Skyboard ui/dm-star.js), vendored in /star. Config in one object. */
+import { mountStar } from './star/dm-star-site.js';
+mountStar(document.getElementById('canvas-container'), {
+  preset: 'sol',   // 'sol' = pale golden star (5778 K, seed 1). Or set { type:'K orange', seed:7 } / { temp:6200, seed:3 }
+  // distance: 3.2, quality: 'auto', dprCap: 2
+}).finally(() => document.getElementById('loader')?.remove());
 </script>
 </body>
 </html>
