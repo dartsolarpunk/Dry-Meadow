@@ -25,6 +25,7 @@ button { font-family:inherit; }
 #hero { position:relative; height:100vh; height:100svh; min-height:480px; width:100%; overflow:hidden; background:transparent; }
 #canvas-container { position:absolute; inset:0; z-index:1; pointer-events:none; }
 #canvas-container canvas { display:block; width:100% !important; height:100% !important; background:transparent; pointer-events:none !important; touch-action:auto !important; }
+#star-grab { position:absolute; z-index:2; left:18%; right:18%; top:0; bottom:170px; touch-action:none; }
 #ui { position:absolute; inset:0; z-index:10; pointer-events:none; }
 #ui > * { pointer-events:auto; }
 #loader { position:absolute; inset:0; background:#000; display:flex; align-items:center; justify-content:center; z-index:50; color:#fff; font-size:1.2rem; pointer-events:none; }
@@ -110,6 +111,7 @@ section { scroll-margin-top:0; }
 <header id="hero" aria-label="Dry Meadow">
   <div id="loader">Loading Sol...</div>
   <div id="canvas-container" aria-hidden="true"></div>
+  <div id="star-grab" aria-hidden="true"></div>
   <div id="ui">
     <a class="logo" href="#top">Dry Meadow</a>
     <div class="top-actions">
@@ -202,7 +204,7 @@ section { scroll-margin-top:0; }
 <script src="site.js"></script>
 <script type="module">
 /* Hero star: the game's own star (Journey of the Skyboard ui/dm-star.js), vendored in /star. Config in one object. */
-import { mountStar } from './star/dm-star-site.js?v=orbit2';
+import { mountStar } from './star/dm-star-site.js?v=orbit3';
 mountStar(document.getElementById('canvas-container'), {
   preset: 'sol',   // 'sol' = pale golden star (5778 K, seed 1). Or set { type:'K orange', seed:7 } / { temp:6200, seed:3 }
   // distance: 3.2, quality: 'auto', dprCap: 2

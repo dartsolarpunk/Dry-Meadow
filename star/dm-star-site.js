@@ -149,7 +149,7 @@ export async function mountStar(host, userCfg) {
       el.addEventListener('pointerdown', e => {
         if (e.button > 0 || skip(e.target)) return;
         ptr.set(e.pointerId, e); O.down = true; O.vaz = O.vpol = 0; sx = e.clientX; sy = e.clientY;
-        mode = e.pointerType === 'mouse' ? 'orbit' : (ptr.size > 1 ? 'pinch' : '');
+        mode = (e.pointerType === 'mouse' || (e.target.closest && e.target.closest('#star-grab'))) ? 'orbit' : (ptr.size > 1 ? 'pinch' : '');
         if (ptr.size === 2) { const [a, b] = [...ptr.values()]; pinch = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); mode = 'pinch'; }
         if (e.pointerType === 'mouse') { try { el.setPointerCapture(e.pointerId); } catch (_) {} }
         wake();
